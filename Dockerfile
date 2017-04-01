@@ -11,4 +11,4 @@ EXPOSE 5000
 RUN mkdir /api
 COPY scripts /api
 
-ENTRYPOINT [ "/bin/sh", "/api/startup.sh" ]
+ENTRYPOINT [ "python3", "/api/run.py" ]
