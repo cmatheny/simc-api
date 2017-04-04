@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Project SYSTEM "Project-5.1.dtd">
+<!-- eric project file for project SimcApi -->
+<!-- Saved: 2017-04-04, 16:25:21 -->
+<!-- Copyright (C) 2017 Chris Matheny, cmatheny@asu.edu -->
+<Project version="5.1">
+  <Language>en_US</Language>
+  <Hash>5a9aa81065bbba1ec505d06fcdf7fb80e0259ca6</Hash>
+  <ProgLanguage mixed="0">Python3</ProgLanguage>
+  <ProjectType>PyQt5</ProjectType>
+  <Description>API and process handler for cloud-based SimulationCraft platform.</Description>
+  <Version>0.1</Version>
+  <Author>Chris Matheny</Author>
+  <Email>cmatheny@asu.edu</Email>
+  <Eol index="1"/>
+  <Sources>
+    <Source>../Dockerfile</Source>
+    <Source>../sample.json</Source>
+    <Source>__init__.py</Source>
+    <Source>config/__init__.py</Source>
+    <Source>config/settings.py</Source>
+    <Source>controllers/__init__.py</Source>
+    <Source>controllers/rest_controllers.py</Source>
+    <Source>controllers/socket_controllers.py</Source>
+    <Source>exceptions/__init__.py</Source>
+    <Source>exceptions/exceptions.py</Source>
+    <Source>exceptions/exceptions/__init__.py</Source>
+    <Source>ignore.py</Source>
+    <Source>run.py</Source>
+    <Source>services/__init__.py</Source>
+    <Source>services/linux_runner.py</Source>
+    <Source>services/process_manager.py</Source>
+    <Source>services/simc.py</Source>
+    <Source>utility.py</Source>
+    <Source>utils/__init__.py</Source>
+    <Source>utils/file_manager.py</Source>
+    <Source>utils/handlers.py</Source>
+    <Source>utils/logger.py</Source>
+    <Source>utils/module_scanner.py</Source>
+  </Sources>
+  <Forms/>
+  <Translations/>
+  <Resources/>
+  <Interfaces/>
+  <Others/>
+  <MainScript>run.py</MainScript>
+  <Vcs>
+    <VcsType>None</VcsType>
+  </Vcs>
+  <FiletypeAssociations>
+    <FiletypeAssociation pattern="*.e4p" type="OTHERS"/>
+    <FiletypeAssociation pattern="*.idl" type="INTERFACES"/>
+    <FiletypeAssociation pattern="*.md" type="OTHERS"/>
+    <FiletypeAssociation pattern="*.py" type="SOURCES"/>
+    <FiletypeAssociation pattern="*.py3" type="SOURCES"/>
+    <FiletypeAssociation pattern="*.pyw" type="SOURCES"/>
+    <FiletypeAssociation pattern="*.pyw3" type="SOURCES"/>
+    <FiletypeAssociation pattern="*.qm" type="TRANSLATIONS"/>
+    <FiletypeAssociation pattern="*.qrc" type="RESOURCES"/>
+    <FiletypeAssociation pattern="*.rst" type="OTHERS"/>
+    <FiletypeAssociation pattern="*.ts" type="TRANSLATIONS"/>
+    <FiletypeAssociation pattern="*.txt" type="OTHERS"/>
+    <FiletypeAssociation pattern="*.ui" type="FORMS"/>
+    <FiletypeAssociation pattern="README" type="OTHERS"/>
+    <FiletypeAssociation pattern="README.*" type="OTHERS"/>
+  </FiletypeAssociations>
+</Project>

@@ -1,0 +1,3 @@
+class SimulationFailureException(Exception):
+    pass
+    
