@@ -1,15 +1,17 @@
 import collections
-from exceptions.exceptions import SimulationFailureException
-import services.linux_runner as runner
 import math
 import random
-from config import settings
-import sys
 import time
 import threading
 
-class ProcessManager():
-    
+from config import settings
+from exceptions.exceptions import SimulationFailureException
+from utils import logger
+from services import linux_runner as runner
+
+
+class ProcessManager:
+
     def __init__(self):
         self.jobs = {
             'queued': collections.deque(),
@@ -26,7 +28,7 @@ class ProcessManager():
     def generate_random_id(self):
         while True:
             id = math.floor(random.random() * 9999999)
-            if not (any(proc['id'] == id for proc in self.jobs["queued"]) and 
+            if not (any(proc['id'] == id for proc in self.jobs["queued"]) and
                     any(proc['id'] == id for proc in self.jobs["running"]) and
                     any(proc['id'] == id for proc in self.jobs["completed"])):
                 return id
@@ -36,22 +38,24 @@ class ProcessManager():
         self.threads.append(thread)
         self.thread_id_counter += 1
         thread.start()
-        
+
     def stop_thread(self, thread_index):
         self.threads[thread_index].is_running = False
-        
+
     def queue_job(self, id, command):
         job = {"id": id, "command": command}
         self.jobs["queued"].append(job)
-        print("Simulation " + str(id) + " Queued.", file = sys.stderr)
+        logger.log("Simulation ", id, " Queued.")
         return job
 
-    def wait_for_job(self, job, interval=settings.DEFAULT_QUEUE_CHECK_INTERVAL):
+    def wait_for_job(self, job,
+                     interval=settings.DEFAULT_QUEUE_CHECK_INTERVAL):
+
         while job not in self.jobs["completed"]:
             time.sleep(interval)
-            
+
     def queue_process_and_wait(self, id, command,
-                interval=settings.DEFAULT_QUEUE_CHECK_INTERVAL):
+                               interval=settings.DEFAULT_QUEUE_CHECK_INTERVAL):
         job = self.queue_job(id, command)
         self.wait_for_job(job, interval)
         return job
@@ -60,32 +64,35 @@ class ProcessManager():
         if process['exit_code'] is not 0:
             raise SimulationFailureException(
                 "Simulation did not complete successfully")
-                
+
     def cleanup_completed_job(self, job):
         self.jobs["completed"].remove(job)
 
+
 class ProcessMonitor(threading.Thread):
-    
+
     def __init__(self, jobs, threads):
         threading.Thread.__init__(self)
         self.jobs = jobs
         self.threads = threads
-    
+
     def run(self):
         while True:
             self.print_jobs()
             time.sleep(1)
             self.print_threads()
             time.sleep(4)
-        
+
     def print_jobs(self):
-        print(self.jobs, file = sys.stderr)
-    
+        logger.log(self.jobs)
+
     def print_threads(self):
         for thread in self.threads:
-            print('{"threadID": ' + str(thread.threadID) + ', "status": ' + thread.status 
-                + ', "completed_jobs": ' + str(thread.completed_jobs) + '}', file = sys.stderr)
-        
+            logger.log('{"threadID": ', str(thread.threadID),
+                       ', "status": ', thread.status,
+                       ', "completed_jobs": ', str(thread.completed_jobs), '}')
+
+
 class ProcessThread(threading.Thread):
 
     def __init__(self, threadID, jobs):
@@ -98,34 +105,34 @@ class ProcessThread(threading.Thread):
         self._stop = threading.Event()
 
     def run(self):
-        print("Starting Simulation Thread " + str(self.threadID), file = sys.stderr)
-        
+        logger.log("Starting Simulation Thread ", str(self.threadID))
+
         self.is_running = True
         self.status = "Idle"
-        
+
         while self.is_running is True:
             if len(self.jobs["queued"]) is 0:
                 time.sleep(settings.DEFAULT_THREAD_CHECK_INTERVAL)
             else:
                 self.status = "Working"
                 proc = self.jobs["queued"].popleft()
-                
+
                 self.jobs["running"].append(proc)
                 exit_code = runner.run_command(proc)
                 self.jobs["running"].remove(proc)
-                
+
                 proc['exit_code'] = exit_code
                 self.jobs["completed"].append(proc)
                 self.completed_jobs += 1
-                print("Completed Simulation (" + str(self.completed_jobs) + ")",
-                    file = sys.stderr)
+                logger.log("Completed Simulation (",
+                           str(self.completed_jobs), ")")
                 self.status = "Idle"
-        
+
         self.status = "Stopped"
-    
+
     def stop(self):
         self._stop.set()
-        
+
     def __str__(self):
-        return ('{"threadID": ' + self.threadID + ', "status": ' + self.status 
-                + ', "completed_jobs": ' + self.completed_jobs + '}')
+        return ("{'threadID': '{}', 'status': '{}', 'completed_jobs': '{}'}".
+                format(self.threadID, self.status, self.completed_jobs))

@@ -3,12 +3,11 @@ FROM cmatheny/simc:latest
 RUN apk add --no-cache python3
 RUN pip3 install -U pip
 RUN pip3 install -U \
-    eve \
-    setuptools
+    tornado
 
 EXPOSE 5000
 
 RUN mkdir /api
-COPY scripts /api
+COPY python /api
 
 ENTRYPOINT [ "python3", "/api/run.py" ]

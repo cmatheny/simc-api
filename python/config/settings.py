@@ -1,6 +1,5 @@
 import sys
 
-SERVER_NAME = None
 SERVER_PORT = "8888"
 
 MAX_SIM_THREADS = 2
@@ -19,6 +18,11 @@ logger_settings = {
     "DEFAULT_LOG": sys.stdout,
     "DEFAULT_ERR": sys.stderr,
     "DEFAULT_WARN": sys.stderr,
-    "LOG_INCLUDE": [ "debug", "log", "err", "warn" ],
-    "LOG_TIMESTAMP": True,
+    "INCLUDE": {
+                "debug": True,
+                "log": True,
+                "err": True,
+                "warn": True
+                },
+    "TIMESTAMP": True,
 }

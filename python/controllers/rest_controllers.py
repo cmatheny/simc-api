@@ -1,15 +1,17 @@
 import utils.logger
 from utils.handlers import RestController, RequestMapping
 
+
 @RestController
-@RequestMapping(url = "/")
+@RequestMapping(url="/")
 class MainController:
     def get(self):
         utils.logger.log("Hello, world")
         self.write("HI")
 
-@RequestMapping(url = "/simulate")
+
 @RestController
+@RequestMapping(url="/simulate")
 class SimulationController:
     def get(self):
         message = "Do a simulation"
@@ -17,7 +19,7 @@ class SimulationController:
         self.write({"Message": message})
 
 
-'''        
+'''
 mappings.append(r"/simulate", SimulateHandler)
 class SimulateHandler(tornado.web.RequestHandler):
     def post(self):
@@ -25,7 +27,7 @@ class SimulateHandler(tornado.web.RequestHandler):
         print(request_json, file=sys.stderr)
         results_json = service.simc_armory_to_json(request_json)
         return return_json(results_json)
-        
+
 def stringify(json_dict):
     return json.dumps(json_dict, sort_keys=True, indent=2)
 
