@@ -5,8 +5,7 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
-import ignore
-import services.simc
+from services.simc import SimcService
 from utils import logger
 from utils import module_scanner
 
@@ -20,15 +19,16 @@ def make_app(settings_file="config.settings"):
     return app
 
 if __name__ == '__main__':
-    print(ignore.Test.callit(2))
-
-    with open(os.path. expanduser("~") + "/.simc_apikey", "w") as f:
-        f.write(os.environ['APIKEY'])
-
     logger.debug("Debug Test")
     logger.log("Log Test")
     logger.warn("Warn Test")
     logger.err("Error Test")
+
+    with open(os.path. expanduser("~") + "/.simc_apikey", "w") as f:
+        f.write(os.environ['APIKEY'])
+
     app = make_app()
-    service = services.simc.SimcService()
-    tornado.ioloop.IOLoop.current().start()
+    #service = SimcService()
+    tornado.ioloop.IOLoop.instance().start()
+    logger.log("Going down.")
+    tornado.ioloop.IOLoop.instance().stop()

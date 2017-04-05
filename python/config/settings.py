@@ -1,6 +1,6 @@
 import sys
 
-SERVER_PORT = "8888"
+SERVER_PORT = "28888"
 
 MAX_SIM_THREADS = 2
 DEFAULT_QUEUE_CHECK_INTERVAL = 2
@@ -19,7 +19,7 @@ logger_settings = {
     "DEFAULT_ERR": sys.stderr,
     "DEFAULT_WARN": sys.stderr,
     "INCLUDE": {
-                "debug": True,
+                "debug": False,
                 "log": True,
                 "err": True,
                 "warn": True

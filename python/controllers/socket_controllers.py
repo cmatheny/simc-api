@@ -1,15 +1,12 @@
 import json
 
-from tornado.websocket import WebSocketHandler
-
 from services.simc import SimcService as SimcService
 from utils import logger
 from utils.handlers import RequestMapping, SocketController
 
 
-@SocketController
 @RequestMapping("/echo")
-class EchoWebSocket(WebSocketHandler):
+class EchoWebSocket(SocketController):
 
     def open(self):
         logger.log("WebSocket opened")
@@ -23,8 +20,7 @@ class EchoWebSocket(WebSocketHandler):
 
 
 @RequestMapping("/sim")
-@SocketController
-class SimcWebSocket(WebSocketHandler):
+class SimcWebSocket(SocketController):
 
     def open(self):
         logger.log("WebSocket opened")
@@ -39,3 +35,34 @@ class SimcWebSocket(WebSocketHandler):
 
     def on_close(self):
         logger.log("WebSocket closed")
+
+
+@RequestMapping("/troll")
+class TrollSocket(SocketController):
+
+    def open(self):
+        logger.log("WebSocket opened")
+        self.counter = 0
+        self.write_message("Hello, How are you?")
+        self.messages = [
+                "That's nice. Anything else?",
+                "I don't like you.",
+                "I'm leaving. Bye.",
+                ]
+
+    def on_message(self, message):
+        logger.log(self.counter)
+        if self.counter is 0:
+            self.write_message(self.messages[0])
+        else:
+            self.write_message(self.messages[self.counter])
+        logger.log(self.counter)
+        self.counter += 1
+        if self.counter is 3:
+            self.close()
+
+    def on_close(self):
+        logger.log("WebSocket closed")
+
+    def do_troll(self):
+        pass

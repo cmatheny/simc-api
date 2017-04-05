@@ -2,17 +2,15 @@ import utils.logger
 from utils.handlers import RestController, RequestMapping
 
 
-@RestController
 @RequestMapping(url="/")
-class MainController:
+class MainController(RestController):
     def get(self):
         utils.logger.log("Hello, world")
         self.write("HI")
 
 
-@RestController
 @RequestMapping(url="/simulate")
-class SimulationController:
+class SimulationController(RestController):
     def get(self):
         message = "Do a simulation"
         utils.logger.log(message)
