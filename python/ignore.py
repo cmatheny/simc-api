@@ -1,5 +1,17 @@
-from utils.logger import log, warn
+import datetime
+import multiprocessing
+import types
+import subprocess
+
 from tornado.websocket import WebSocketHandler
+import tornado.process
+import tornado.gen
+
+from utils import file_manager
+import services.linux_runner as runner
+from utils.logger import log, warn
+
+
 
 class Test:
     a = 5
@@ -12,94 +24,31 @@ class Test:
         return cls.a + x / cls.b
 
 
-def tester(arg):
-    aTest = type(arg.__name__, (Test, arg), {})
+async def long_run(delay, out=log):
 
-    class TestClass1(arg, Test):
-        def iam(self):
-            return self.__class__.__name__
+    for i in range(delay):
+        log(delay-i)
+        out("Starting in {}".format(delay-i))
+        await tornado.gen.sleep(1)
 
-    TestClass1.__name__ = arg.__name__
-    log(arg.__name__)
-    return TestClass1
+    out("Starting Sim")
+    proc = runner.get_simc_armory_to_json_command("us", "emerald-dream",
+                                                  "sarrial", 510)
 
+    job = multiprocessing.Process(target=worker, args=(proc,))
+    job.start()
 
-def tester2(arg):
+    while True:
+        try:
+            file_manager.load_json("510.json")
+            break
+        except FileNotFoundError:
+            await tornado.gen.sleep(1)
 
-    class TestClass2(arg):
-        bojangle = "s"
-        decor = "t2"
+    out("Done")
+    out(file_manager.load_json("510.json"))
 
-        def here(self):
-            return "Yup"
-    TestClass2.__name__ = arg.__name__
-    log(arg.__name__)
-    return TestClass2
+    file_manager.remove_file("510.json")
 
-#class Tester:
-#    def __init__(self, decorated):
-#        log(self, decorated)
-#        self(decorated)
-#
-#    def __call__(self, decorated):
-#        log(self, decorated)
-#        class TestClass(decorated, Test):
-#            bojangle = "s"
-#            decor = "t2"
-#
-#            def here(self):
-#                print("Yep")
-#
-#        TestClass.__name__ = decorated.__name__
-#        return TestClass
-#
-#class Tester2:
-#    def __init__(self, decorated):
-#        log(self, decorated)
-#        self(decorated)
-#
-#    def __call__(self, decorated):
-#        log(self, decorated)
-#        class TestClass2(decorated):
-#            bojangle = "s"
-#            decor = "t2"
-#
-#            def here(self):
-#                print("Yep")
-#
-#        TestClass2.__name__ = decorated.__name__
-#        log(TestClass2)
-#        return TestClass2
-
-
-@tester
-@tester2
-class Test2:
-
-    c = "pie"
-
-
-@tester
-@tester2
-class Test3:
-
-    c = "pie"
-
-
-log(Test2.__dict__.keys())
-
-
-test = Test2()
-test2 = Test3()
-log(test)
-
-log(Test2)
-
-log(test.__class__.__bases__)
-log(Test2.a, Test2.b, Test2.c, sep="   ")
-log(test.a, test.b, test.c, test.bojangle, sep="   ")
-log(test2.a, test2.b, test2.c, test2.bojangle, sep="   ")
-test2.here()
-log(test2.iam())
-warn([klass for klass in globals()])
-log(globals()['Test2'].decor is "t2")
+def worker(proc):
+    return subprocess.call(proc)

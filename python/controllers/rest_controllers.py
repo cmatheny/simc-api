@@ -1,11 +1,12 @@
-import utils.logger
+import ignore
+from utils import logger
 from utils.handlers import RestController, RequestMapping
 
 
 @RequestMapping(url="/")
 class MainController(RestController):
     def get(self):
-        utils.logger.log("Hello, world")
+        logger.log("Hello, world")
         self.write("HI")
 
 
@@ -13,9 +14,17 @@ class MainController(RestController):
 class SimulationController(RestController):
     def get(self):
         message = "Do a simulation"
-        utils.logger.log(message)
+        logger.log(message)
         self.write({"Message": message})
 
+
+@RequestMapping(url="/asr")
+class AsyncController(RestController):
+    async def get(self):
+        logger.log("Async rest hit")
+        response = await ignore.long_run(5)
+        logger.log(response)
+        self.write(response)
 
 '''
 mappings.append(r"/simulate", SimulateHandler)

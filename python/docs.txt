@@ -1,0 +1,8 @@
+
+var ws = new WebSocket("ws://localhost:28888/async");
+
+ws.onmessage = function (evt) {
+	try {msg = JSON.parse(evt.data) }
+	catch (SyntaxError) {msg = evt.data}
+   console.log(msg);
+};

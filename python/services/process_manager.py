@@ -1,29 +1,35 @@
-import collections
 import math
+import multiprocessing
 import random
+import subprocess
 import time
 import threading
 
+import tornado.ioloop
+import tornado.process
+import tornado.gen
+
 from config import settings
 from exceptions.exceptions import SimulationFailureException
-from utils import logger
+from utils import file_manager, logger
 from services import linux_runner as runner
 
 
 class ProcessManager:
 
     def __init__(self):
-        self.jobs = {
-            'queued': collections.deque(),
-            'running': [],
-            'completed': []
-        }
-        self.threads = []
-        self.thread_id_counter = 1
-        self.monitor = ProcessMonitor(self.jobs, self.threads)
-        self.monitor.start()
-        for i in range(settings.MAX_SIM_THREADS):
-            self.start_thread()
+        pass
+#        self.jobs = {
+#            'queued': collections.deque(),
+#            'running': [],
+#            'completed': []
+#        }
+#        self.threads = []
+#        self.thread_id_counter = 1
+#        self.monitor = ProcessMonitor(self.jobs, self.threads)
+#        self.monitor.start()
+#        for i in range(settings.MAX_SIM_THREADS):
+#            self.start_thread()
 
     def generate_random_id(self):
         while True:
@@ -32,6 +38,30 @@ class ProcessManager:
                     any(proc['id'] == id for proc in self.jobs["running"]) and
                     any(proc['id'] == id for proc in self.jobs["completed"])):
                 return id
+
+    async def run_job(self, out, proc=0):
+
+        out("Starting Sim")
+        proc = runner.get_simc_armory_to_json_command("us", "emerald-dream",
+                                                      "sarrial", 510)
+
+        job = multiprocessing.Process(target=self.worker, args=(proc,))
+        job.start()
+
+        while True:
+            try:
+                file_manager.load_json("510.json")
+                break
+            except FileNotFoundError:
+                await tornado.gen.sleep(1)
+
+        out("Done")
+        out(file_manager.load_json("510.json"))
+
+        file_manager.remove_file("510.json")
+
+    def worker(self, proc):
+        return subprocess.call(proc)
 
     def start_thread(self):
         thread = ProcessThread(self.thread_id_counter, self.jobs)
