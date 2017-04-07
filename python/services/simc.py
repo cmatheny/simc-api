@@ -1,42 +1,54 @@
+import tornado.ioloop
+
 from config import settings
 from services import linux_runner as runner
+from services.application import Application
 from services.process_manager import ProcessManager
-from utils import file_manager
+from utils import file_manager, logger
+from utils.misc import singleton
 
 
+@singleton
 class SimcService():
 
     def __init__(self):
         self.proc_man = ProcessManager()
+        self.app = Application()
 
-    def simc_armory_to_json(self, char_json):
+    def simc_armory_to_json(self, char_json, out=logger.null):
 
-        id = char_json["id"] if "id" in char_json \
-            else self.proc_man.generate_random_id()
+        self.check_dict_keys(char_json, ['realm', 'name'], True)
+
+        pid = self.proc_man.generate_random_pid()
 
         region = char_json["region"] if "region" in char_json \
             else settings.DEFAULT_REGION
 
         command = runner.get_simc_armory_to_json_command(
-                region, char_json['realm'], char_json['name'], id)
+                region, char_json['realm'], char_json['name'], pid)
 
-        job = self.proc_man.queue_process_and_wait(id, command)
+        tornado.ioloop.IOLoop.current().spawn_callback(
+                self.run_simulation, pid, command, out)
 
-        results_file = "".join([str(id), ".json"])
-        file_manager.check_for_file(results_file)
+    async def run_simulation(self, pid, command, out=logger.null):
+
+        await self.proc_man.run_job(pid, command, out)
+        out("Starting Simulation")
+
+        results_file = "{}.json".format(pid)
+        await file_manager.wait_for_file(
+                results_file, self.app.config.DEFAULT_QUEUE_CHECK_INTERVAL)
+        out("Simulation complete")
+
         results_json = file_manager.load_json(results_file)
+        out(results_json, "result")
 
-        self.cleanup(results_file, job)
-        return results_json
-
-    def cleanup(self, results_file, job):
         file_manager.remove_file(results_file)
-        self.proc_man.cleanup_completed_job(job)
 
     def get_queue(self):
         return self.proc_man.jobs
 
-    def check_dict_keys(dictionary, keylist, exception=False):
+    def check_dict_keys(self, dictionary, keylist, exception=False):
         missing_keys = []
         check = True
         missing_keys = [key for key in keylist if key not in dictionary]

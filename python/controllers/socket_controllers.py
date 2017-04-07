@@ -2,13 +2,11 @@ import json
 
 import tornado.ioloop
 
-import ignore
 from services.simc import SimcService as SimcService
 from utils import logger
 from utils.handlers import RequestMapping, SocketController
 
 
-from services.process_manager import ProcessManager
 @RequestMapping("/echo")
 class EchoWebSocket(SocketController):
 
@@ -75,15 +73,19 @@ class TrollSocket(SocketController):
 @RequestMapping("/async")
 class AsyncSocket(SocketController):
 
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.return_methods = [
+                "message"
+                "result"
+                ]
+        self.service = SimcService()
+
     def open(self):
         logger.log("WebSocket opened")
 
-    def on_message(self, message):
-        p=ProcessManager()
-        self.write_message("Received request.")
-        logger.log("'{}' recieved from client".format(message))
-        tornado.ioloop.IOLoop.current().spawn_callback(
-                p.run_job, self.write_message)
-
     def on_close(self):
         logger.log("WebSocket closed")
+
+    def simulate(self, request_json):
+        self.service.simc_armory_to_json(request_json, self.write_message)

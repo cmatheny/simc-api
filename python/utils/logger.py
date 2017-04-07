@@ -47,6 +47,13 @@ def warn(*args, file=settings["DEFAULT_WARN"], sep="", end="\n"):
                   sep=sep, end=end)
 
 
+def null(*args, file=settings["DEFAULT_NULL"], sep="", end="\n"):
+
+    if settings["INCLUDE"]["null"]:
+        print_log(*args, log_type="WARNING", file=file,
+                  sep=sep, end=end)
+
+
 def timestamp():
 
     if settings["TIMESTAMP"] is True:

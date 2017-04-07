@@ -6,3 +6,7 @@ ws.onmessage = function (evt) {
 	catch (SyntaxError) {msg = evt.data}
    console.log(msg);
 };
+
+TODO:
+    add async for simulation process
+    add status checking after simulation completes

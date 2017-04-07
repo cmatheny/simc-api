@@ -2,167 +2,128 @@ import math
 import multiprocessing
 import random
 import subprocess
-import time
-import threading
+import collections
 
 import tornado.ioloop
 import tornado.process
 import tornado.gen
 
-from config import settings
 from exceptions.exceptions import SimulationFailureException
 from utils import file_manager, logger
 from services import linux_runner as runner
+from services.application import Application
 
 
 class ProcessManager:
 
     def __init__(self):
         pass
-#        self.jobs = {
-#            'queued': collections.deque(),
-#            'running': [],
-#            'completed': []
-#        }
+        self.jobs = {
+            'queued': collections.deque(),
+            'running': [],
+            'completed': []
+        }
+        self.app = Application()
 #        self.threads = []
-#        self.thread_id_counter = 1
+#        self.thread_pid_counter = 1
 #        self.monitor = ProcessMonitor(self.jobs, self.threads)
 #        self.monitor.start()
 #        for i in range(settings.MAX_SIM_THREADS):
 #            self.start_thread()
 
-    def generate_random_id(self):
+    def generate_random_pid(self):
         while True:
-            id = math.floor(random.random() * 9999999)
-            if not (any(proc['id'] == id for proc in self.jobs["queued"]) and
-                    any(proc['id'] == id for proc in self.jobs["running"]) and
-                    any(proc['id'] == id for proc in self.jobs["completed"])):
-                return id
+            pid = math.floor(random.random() * 9999999)
+            if not (any(proc == pid for proc in self.jobs["queued"]) and
+                    any(proc == pid for proc in self.jobs["running"]) and
+                    any(proc == pid for proc in self.jobs["completed"])):
+                return pid
 
-    async def run_job(self, out, proc=0):
+    async def run_job(self, pid, command, out=logger.null):
 
-        out("Starting Sim")
-        proc = runner.get_simc_armory_to_json_command("us", "emerald-dream",
-                                                      "sarrial", 510)
+        if len(self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
+            self.jobs["queued"].append(pid)
+            logger.log(self.jobs)
+            out("Queued at position {}.".format(len(self.jobs["queued"])))
+            while self.jobs["queued"][0] is not pid or len(
+                    self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
+                await tornado.gen.sleep(
+                    self.app.config.DEFAULT_QUEUE_CHECK_INTERVAL)
+            self.jobs["queued"].popleft()
 
-        job = multiprocessing.Process(target=self.worker, args=(proc,))
+        self.jobs["running"].append(pid)
+
+        worker = ProcessThread(1, self.jobs)
+        job = multiprocessing.Process(target=worker.run_job, args=(command,))
         job.start()
 
-        while True:
-            try:
-                file_manager.load_json("510.json")
-                break
-            except FileNotFoundError:
-                await tornado.gen.sleep(1)
-
-        out("Done")
-        out(file_manager.load_json("510.json"))
-
-        file_manager.remove_file("510.json")
-
-    def worker(self, proc):
-        return subprocess.call(proc)
-
-    def start_thread(self):
-        thread = ProcessThread(self.thread_id_counter, self.jobs)
-        self.threads.append(thread)
-        self.thread_id_counter += 1
-        thread.start()
-
-    def stop_thread(self, thread_index):
-        self.threads[thread_index].is_running = False
-
-    def queue_job(self, id, command):
-        job = {"id": id, "command": command}
+    def queue_job(self, pid, command):
+        job = {"pid": pid, "command": command}
         self.jobs["queued"].append(job)
-        logger.log("Simulation ", id, " Queued.")
+        logger.log("Job ", pid, " Queued.")
         return job
 
-    def wait_for_job(self, job,
-                     interval=settings.DEFAULT_QUEUE_CHECK_INTERVAL):
+#    def wait_for_job(self, job,
+#                     interval=app.settings.DEFAULT_QUEUE_CHECK_INTERVAL):
+#
+#        while job not in self.jobs["completed"]:
+#            time.sleep(interval)
+#
+#    def queue_process_and_wait(self, pid, command,
+#                               interval=settings.DEFAULT_QUEUE_CHECK_INTERVAL):
+#        job = self.queue_job(pid, command)
+#        self.wait_for_job(job, interval)
+#        return job
+#
+#    def verify_process_success(self, process):
+#        if process['exit_code'] is not 0:
+#            raise SimulationFailureException(
+#                "Simulation dpid not complete successfully")
+#
+#    def cleanup_completed_job(self, job):
+#        self.jobs["completed"].remove(job)
 
-        while job not in self.jobs["completed"]:
-            time.sleep(interval)
-
-    def queue_process_and_wait(self, id, command,
-                               interval=settings.DEFAULT_QUEUE_CHECK_INTERVAL):
-        job = self.queue_job(id, command)
-        self.wait_for_job(job, interval)
-        return job
-
-    def verify_process_success(self, process):
-        if process['exit_code'] is not 0:
-            raise SimulationFailureException(
-                "Simulation did not complete successfully")
-
-    def cleanup_completed_job(self, job):
-        self.jobs["completed"].remove(job)
-
-
-class ProcessMonitor(threading.Thread):
-
-    def __init__(self, jobs, threads):
-        threading.Thread.__init__(self)
-        self.jobs = jobs
-        self.threads = threads
-
-    def run(self):
-        while True:
-            self.print_jobs()
-            time.sleep(1)
-            self.print_threads()
-            time.sleep(4)
-
-    def print_jobs(self):
-        logger.log(self.jobs)
-
-    def print_threads(self):
-        for thread in self.threads:
-            logger.log('{"threadID": ', str(thread.threadID),
-                       ', "status": ', thread.status,
-                       ', "completed_jobs": ', str(thread.completed_jobs), '}')
+#
+#class ProcessMonitor(threading.Thread):
+#
+#    def __init__(self, jobs, threads):
+#        threading.Thread.__init__(self)
+#        self.jobs = jobs
+#        self.threads = threads
+#
+#    def run(self):
+#        while True:
+#            self.print_jobs()
+#            time.sleep(1)
+#            self.print_threads()
+#            time.sleep(4)
+#
+#    def print_jobs(self):
+#        logger.log(self.jobs)
+#
+#    def print_threads(self):
+#        for thread in self.threads:
+#            logger.log('{"threadpid": ', str(thread.threadpid),
+#                       ', "status": ', thread.status,
+#                       ', "completed_jobs": ', str(thread.completed_jobs), '}')
 
 
-class ProcessThread(threading.Thread):
+class ProcessThread:
 
-    def __init__(self, threadID, jobs):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
+    def __init__(self, threadpid, jobs):
+        self.threadpid = threadpid
         self.jobs = jobs
         self.completed_jobs = 0
         self.status = "Initialized"
         self.is_running = False
-        self._stop = threading.Event()
 
-    def run(self):
-        logger.log("Starting Simulation Thread ", str(self.threadID))
-
-        self.is_running = True
-        self.status = "Idle"
-
-        while self.is_running is True:
-            if len(self.jobs["queued"]) is 0:
-                time.sleep(settings.DEFAULT_THREAD_CHECK_INTERVAL)
-            else:
-                self.status = "Working"
-                proc = self.jobs["queued"].popleft()
-
-                self.jobs["running"].append(proc)
-                exit_code = runner.run_command(proc)
-                self.jobs["running"].remove(proc)
-
-                proc['exit_code'] = exit_code
-                self.jobs["completed"].append(proc)
-                self.completed_jobs += 1
-                logger.log("Completed Simulation (",
-                           str(self.completed_jobs), ")")
-                self.status = "Idle"
-
-        self.status = "Stopped"
+    def run_job(self, proc):
+        logger.log("Starting Simulation Thread ", str(self.threadpid))
+        return subprocess.call(proc)
 
     def stop(self):
-        self._stop.set()
+        pass
 
     def __str__(self):
-        return ("{'threadID': '{}', 'status': '{}', 'completed_jobs': '{}'}".
-                format(self.threadID, self.status, self.completed_jobs))
+        return ("{'threadpid': '{}', 'status': '{}', 'completed_jobs': '{}'}".
+                format(self.threadpid, self.status, self.completed_jobs))

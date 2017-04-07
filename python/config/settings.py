@@ -1,4 +1,4 @@
-import sys
+from utils.file_manager import FileManager
 
 SERVER_PORT = "28888"
 
@@ -13,16 +13,19 @@ CONTROLLER_MODULES = [
 ]
 
 # Logger config
+fm = FileManager()
 logger_settings = {
-    "DEFAULT_DEBUG": sys.stdout,
-    "DEFAULT_LOG": sys.stdout,
-    "DEFAULT_ERR": sys.stderr,
-    "DEFAULT_WARN": sys.stderr,
+    "DEFAULT_DEBUG": fm.stdout,
+    "DEFAULT_LOG": fm.stdout,
+    "DEFAULT_ERR": fm.stderr,
+    "DEFAULT_WARN": fm.stderr,
+    "DEFAULT_NULL": fm.null,
     "INCLUDE": {
                 "debug": False,
                 "log": True,
                 "err": True,
-                "warn": True
+                "warn": True,
+                "null": True,
                 },
     "TIMESTAMP": True,
 }
