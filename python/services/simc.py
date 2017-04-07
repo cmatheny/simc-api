@@ -33,11 +33,9 @@ class SimcService():
     async def run_simulation(self, pid, command, out=logger.null):
 
         await self.proc_man.run_job(pid, command, out)
-        out("Starting Simulation")
 
         results_file = "{}.json".format(pid)
-        await file_manager.wait_for_file(
-                results_file, self.app.config.DEFAULT_QUEUE_CHECK_INTERVAL)
+
         out("Simulation complete")
 
         results_json = file_manager.load_json(results_file)

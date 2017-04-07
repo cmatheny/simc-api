@@ -1,5 +1,5 @@
 import math
-import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 import random
 import subprocess
 import collections
@@ -14,6 +14,12 @@ from services import linux_runner as runner
 from services.application import Application
 
 
+def run_job(proc):
+    logger.log("Starting Simulation Thread.")
+    logger.log(proc)
+    return subprocess.call(proc)
+
+
 class ProcessManager:
 
     def __init__(self):
@@ -24,6 +30,8 @@ class ProcessManager:
             'completed': []
         }
         self.app = Application()
+        self.executor = ThreadPoolExecutor(max_workers=2)
+
 #        self.threads = []
 #        self.thread_pid_counter = 1
 #        self.monitor = ProcessMonitor(self.jobs, self.threads)
@@ -44,7 +52,8 @@ class ProcessManager:
         if len(self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
             self.jobs["queued"].append(pid)
             logger.log(self.jobs)
-            out("Queued at position {}.".format(len(self.jobs["queued"])))
+            out("Job #{} Queued at position {}.".format(
+                    pid, len(self.jobs["queued"])))
             while self.jobs["queued"][0] is not pid or len(
                     self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
                 await tornado.gen.sleep(
@@ -52,10 +61,18 @@ class ProcessManager:
             self.jobs["queued"].popleft()
 
         self.jobs["running"].append(pid)
+        out("Starting Job #{}".format(pid))
+        proc = self.executor.submit(run_job, command)
+        logger.log(proc.done())
+        while not proc.done():
+            await tornado.gen.sleep(1)
+            logger.log(proc.done())
 
-        worker = ProcessThread(1, self.jobs)
-        job = multiprocessing.Process(target=worker.run_job, args=(command,))
-        job.start()
+#        proc = tornado.process.Subprocess(command)
+#        await proc.wait_for_exit()
+
+        self.jobs["running"].remove(pid)
+        self.jobs["completed"].append(pid)
 
     def queue_job(self, pid, command):
         job = {"pid": pid, "command": command}

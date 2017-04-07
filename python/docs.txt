@@ -9,4 +9,4 @@ ws.onmessage = function (evt) {
 
 TODO:
     add async for simulation process
-    add status checking after simulation completes
+    add status checking during simulation/queue
