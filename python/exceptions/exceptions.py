@@ -1,2 +1,2 @@
-class SimulationFailureException(Exception):
+class ProcessFailureException(Exception):
     pass

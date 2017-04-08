@@ -61,7 +61,7 @@ class SocketController(Controller, WebSocketHandler):
 
         try:
             method(data_json)
-        except TypeError:
+        except:
             self.write_message("Server Error", "error")
             traceback.print_exc()
 

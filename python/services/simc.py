@@ -20,7 +20,6 @@ class SimcService():
         self.check_dict_keys(char_json, ['realm', 'name'], True)
 
         pid = self.proc_man.generate_random_pid()
-
         region = char_json["region"] if "region" in char_json \
             else settings.DEFAULT_REGION
 
@@ -32,12 +31,9 @@ class SimcService():
 
     async def run_simulation(self, pid, command, out=logger.null):
 
-        await self.proc_man.run_job(pid, command, out)
+        await self.proc_man.run_job(command, pid, out)
 
         results_file = "{}.json".format(pid)
-
-        out("Simulation complete")
-
         results_json = file_manager.load_json(results_file)
         out(results_json, "result")
 

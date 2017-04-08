@@ -7,6 +7,10 @@ ws.onmessage = function (evt) {
    console.log(msg);
 };
 
+ws.send(JSON.stringify(['simulate', {'name':'sarrial','realm':'emerald-dream'}]))
+
+console.log(msg[1].sim.players[0].collected_data.dps.mean)
+
 TODO:
     add async for simulation process
     add status checking during simulation/queue
