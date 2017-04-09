@@ -13,10 +13,21 @@ from utils import logger
 from services.application import Application
 
 
-def run_job(proc):
+def run_job(pid, command, out=logger.null):
     logger.log("Starting Simulation Thread.")
-    logger.log(proc)
-    return subprocess.call(proc)
+    logger.log(command)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               universal_newlines=True)
+    for line in iter(process.stdout.readline, ''):
+        message = {
+                "job": pid,
+                "message": '{}'.format(line.rstrip())
+                }
+        logger.debug(message)
+        out(message, "output")
+    process.wait()
+    return process.returncode
 
 
 class ProcessManager:
@@ -28,7 +39,7 @@ class ProcessManager:
             'running': [],
         }
         self.app = Application()
-        self.executor = ThreadPoolExecutor(max_workers=2)
+        self.executor = ThreadPoolExecutor(max_workers=1)
 
     def generate_random_pid(self):
         while True:
@@ -55,7 +66,10 @@ class ProcessManager:
         self.jobs["running"].append(pid)
         out("Starting Job #{}".format(pid))
         logger.log("Starting Job #{}".format(pid))
-        proc = self.executor.submit(run_job, command)
+        proc = self.executor.submit(run_job, pid, command, out)
+
+        while proc.running():
+            await tornado.gen.sleep(1)
         exit_code = proc.result()
 
         self.jobs["running"].remove(pid)
