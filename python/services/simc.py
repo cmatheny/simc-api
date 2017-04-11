@@ -1,7 +1,5 @@
 import tornado.ioloop
 
-from config import settings
-from services import linux_runner as runner
 from services.application import Application
 from services.process_manager import ProcessManager
 from utils import file_manager, logger
@@ -15,15 +13,21 @@ class SimcService():
         self.proc_man = ProcessManager()
         self.app = Application()
 
+    def get_simc_armory_to_json_command(locale, realm, character, id):
+        armory_string = "armory={},{},{}".format(locale, realm, character)
+        json_string = "json2={}.json".format(id)
+        call_list = ["simc", armory_string, json_string]
+        return call_list
+
     def simc_armory_to_json(self, char_json, out=logger.warn):
 
         self.check_dict_keys(char_json, ['realm', 'name'], True)
 
         pid = self.proc_man.generate_random_pid()
         region = char_json["region"] if "region" in char_json \
-            else settings.DEFAULT_REGION
+            else self.app.config.DEFAULT_REGION
 
-        command = runner.get_simc_armory_to_json_command(
+        command = self.get_simc_armory_to_json_command(
                 region, char_json['realm'], char_json['name'], pid)
 
         tornado.ioloop.IOLoop.current().spawn_callback(

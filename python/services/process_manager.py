@@ -4,8 +4,6 @@ import random
 import subprocess
 import collections
 
-import tornado.ioloop
-import tornado.process
 import tornado.gen
 
 from exceptions.exceptions import ProcessFailureException
