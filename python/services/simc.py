@@ -15,7 +15,7 @@ class SimcService():
         self.proc_man = ProcessManager()
         self.app = Application()
 
-    def simc_armory_to_json(self, char_json, out=logger.null):
+    def simc_armory_to_json(self, char_json, out=logger.warn):
 
         self.check_dict_keys(char_json, ['realm', 'name'], True)
 
@@ -29,7 +29,7 @@ class SimcService():
         tornado.ioloop.IOLoop.current().spawn_callback(
                 self.run_simulation, pid, command, out)
 
-    async def run_simulation(self, pid, command, out=logger.null):
+    async def run_simulation(self, pid, command, out=logger.warn):
 
         await self.proc_man.run_job(command, pid, out)
 

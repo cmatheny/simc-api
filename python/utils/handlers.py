@@ -50,13 +50,13 @@ class SocketController(Controller, WebSocketHandler):
             self.write_message("Invalid Format", "error")
             return
 
-        method_name = message_json[0]
-        data_json = message_json[1]
+        method_name = message_json["method"]
+        data_json = message_json["data"]
 
         try:
             method = getattr(self, method_name)
         except AttributeError:
-            self.write_message("Invalid Method.", "error")
+            self.write_message("Invalid Method", "error")
             return
 
         try:
@@ -65,8 +65,12 @@ class SocketController(Controller, WebSocketHandler):
             self.write_message("Server Error", "error")
             traceback.print_exc()
 
-    def write_message(self, data, method="message"):
-        response = json.dumps([method, data])
+    def write_message(self, data, method="message", settings=None):
+        if method not in self.return_methods:
+            raise ValueError("{} not in {}.return_methods.".format(
+                    method, self.__class__.__name__))
+        response = json.dumps({"method": method, "data": data,
+                               "settings": settings})
         super().write_message(response)
 
 
