@@ -13,7 +13,7 @@ from utils import logger
 from services.application import Application
 
 
-def run_job(pid, command, out=logger.null):
+def run_job(pid, command, out=logger.warn):
     logger.log("Starting Simulation Thread.")
     logger.log(command)
     process = subprocess.Popen(command, stdout=subprocess.PIPE,
@@ -39,7 +39,7 @@ class ProcessManager:
             'running': [],
         }
         self.app = Application()
-        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.executor = ThreadPoolExecutor(max_workers=2)
 
     def generate_random_pid(self):
         while True:
@@ -48,23 +48,14 @@ class ProcessManager:
                     any(proc == pid for proc in self.jobs["running"])):
                 return pid
 
-    async def run_job(self, command, pid=None, out=logger.null):
+    async def run_job(self, command, pid=None, out=logger.warn):
 
         pid = pid if pid else self.generate_random_pid()
 
-        if len(self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
-            self.jobs["queued"].append(pid)
-            logger.log(self.jobs)
-            out("Job #{} Queued at position {}.".format(
-                    pid, len(self.jobs["queued"])))
-            while self.jobs["queued"][0] is not pid or len(
-                    self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
-                await tornado.gen.sleep(
-                    self.app.config.DEFAULT_QUEUE_CHECK_INTERVAL)
-            self.jobs["queued"].popleft()
+        await self.wait_for_queue(pid, out)
 
         self.jobs["running"].append(pid)
-        out("Starting Job #{}".format(pid))
+        out({"job_id": pid, "status": "Running"}, "status")
         logger.log("Starting Job #{}".format(pid))
         proc = self.executor.submit(run_job, pid, command, out)
 
@@ -75,16 +66,24 @@ class ProcessManager:
         self.jobs["running"].remove(pid)
 
         if exit_code is 0:
-            out("Finished Job #{}".format(pid))
+            out({"job_id": pid, "status": "Completed"}, "status")
             logger.log("Finished Job #{}".format(pid))
             return pid
         else:
+            out({"job_id": pid, "status": "Failed"}, "status")
             out("Job #{} Failed".format(pid), "error")
             logger.log("Job #{} Failed".format(pid))
             raise ProcessFailureException
 
-    def queue_job(self, pid, command):
-        job = {"pid": pid, "command": command}
-        self.jobs["queued"].append(job)
-        logger.log("Job ", pid, " Queued.")
-        return job
+    async def wait_for_queue(self, pid, out=logger.warn):
+
+        if len(self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
+            self.jobs["queued"].append(pid)
+            logger.log(self.jobs)
+            out({"job_id": pid, "status": "Queued",
+                 "position": len(self.jobs["queued"])}, "status")
+            while self.jobs["queued"][0] is not pid or len(
+                    self.jobs["running"]) >= self.app.config.MAX_SIM_THREADS:
+                await tornado.gen.sleep(
+                    self.app.config.DEFAULT_QUEUE_CHECK_INTERVAL)
+            return self.jobs["queued"].popleft()

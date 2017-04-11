@@ -76,8 +76,11 @@ class AsyncSocket(SocketController):
     def __init__(self, *args):
         super().__init__(*args)
         self.return_methods = [
-                "message"
-                "result"
+                "error",
+                "message",
+                "output",
+                "result",
+                "status",
                 ]
         self.service = SimcService()
 
