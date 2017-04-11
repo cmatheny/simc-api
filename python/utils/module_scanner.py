@@ -1,10 +1,8 @@
 import importlib
 
-from tornado.web import RequestHandler
-from tornado.websocket import WebSocketHandler
-
-from utils.handlers import Controller, RequestMapping
+from utils.handlers import RequestMapping
 from utils import logger
+
 
 def generate_handlers(module_list):
 

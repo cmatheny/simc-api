@@ -1,7 +1,6 @@
 from importlib import import_module
 
 import tornado.ioloop
-import tornado.process
 import tornado.web
 
 from utils import module_scanner, logger

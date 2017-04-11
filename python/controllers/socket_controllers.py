@@ -1,8 +1,6 @@
 import json
 
-import tornado.ioloop
-
-from services.simc import SimcService as SimcService
+from services.simc import SimcService
 from utils import logger
 from utils.handlers import RequestMapping, SocketController
 
