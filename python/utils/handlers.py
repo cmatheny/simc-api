@@ -61,8 +61,9 @@ class SocketController(Controller, WebSocketHandler):
 
         try:
             method(data_json)
-        except:
+        except Exception as ex:
             self.write_message("Server Error", "error")
+            logger.log(ex)
             traceback.print_exc()
 
     def write_message(self, data, method="message", settings=None):

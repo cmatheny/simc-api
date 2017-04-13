@@ -13,10 +13,10 @@ class SimcService():
         self.proc_man = ProcessManager()
         self.app = Application()
 
-    def get_simc_armory_to_json_command(locale, realm, character, id):
+    def get_simc_armory_to_json_command(self, locale, realm, character, id):
         armory_string = "armory={},{},{}".format(locale, realm, character)
         json_string = "json2={}.json".format(id)
-        call_list = ["simc", armory_string, json_string]
+        call_list = ["simc", armory_string, json_string, "threads=2", "iterations=10000"]
         return call_list
 
     def simc_armory_to_json(self, char_json, out=logger.warn):

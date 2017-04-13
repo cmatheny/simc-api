@@ -21,7 +21,7 @@ logger_settings = {
     "DEFAULT_WARN": fm.stderr,
     "DEFAULT_NULL": fm.null,
     "INCLUDE": {
-                "debug": True,
+                "debug": False,
                 "log": True,
                 "err": True,
                 "warn": True,
