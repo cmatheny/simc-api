@@ -19,7 +19,7 @@ def run_job(pid, command, out=logger.warn):
                                universal_newlines=True)
     for line in iter(process.stdout.readline, ''):
         message = {
-                "job": pid,
+                "job_id": pid,
                 "message": '{}'.format(line.rstrip())
                 }
         logger.debug(message)
@@ -37,7 +37,7 @@ class ProcessManager:
             'running': [],
         }
         self.app = Application()
-        self.executor = ThreadPoolExecutor(max_workers=2)
+        self.executor = ThreadPoolExecutor()
 
     def generate_random_pid(self):
         while True:
