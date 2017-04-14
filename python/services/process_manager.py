@@ -39,7 +39,7 @@ class ProcessManager:
             'running': [],
         }
         self.app = Application()
-        self.executor = ThreadPoolExecutor()
+        self.executor = ThreadPoolExecutor(max_workers=20)
 
     def generate_random_pid(self):
         while True:
