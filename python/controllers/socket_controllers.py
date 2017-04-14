@@ -39,3 +39,8 @@ class SimcSocket(SocketController):
             del self.jobs[self.jobs.index(job_id)]
         logger.log(self.jobs)
         self.service.cancel_simulation(job_id)
+
+    def write_message(self, data, method="message", settings=None):
+        if method is "status" and data["status"] is "Completed":
+            self.jobs.remove(data["job_id"])
+        super().write_message(data, method, settings)
