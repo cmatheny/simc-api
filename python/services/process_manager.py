@@ -6,18 +6,21 @@ import collections
 
 import tornado.gen
 
-from exceptions.exceptions import ProcessFailureException
+import exceptions.exceptions as ex
 from utils import logger
 from services.application import Application
 
 
-def run_job(pid, command, out=logger.warn):
+def run_job(pid, job, out=logger.warn):
     logger.log("Starting Simulation Thread.")
-    logger.log(command)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE,
+    logger.log(job["command"])
+    process = subprocess.Popen(job["command"], stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                universal_newlines=True)
     for line in iter(process.stdout.readline, ''):
+        if job["kill"] is True:
+            process.kill()
+            raise ex.CancelledSimulationException
         message = {
                 "job_id": pid,
                 "message": '{}'.format(line.rstrip())
@@ -31,7 +34,6 @@ def run_job(pid, command, out=logger.warn):
 class ProcessManager:
 
     def __init__(self):
-        pass
         self.jobs = {
             'queued': collections.deque(),
             'running': [],
@@ -52,16 +54,19 @@ class ProcessManager:
 
         await self.wait_for_queue(pid, out)
 
-        self.jobs["running"].append(pid)
+        job = {"pid": pid, "executor": None, "command": command, "kill": False}
+        self.jobs["running"].append(job)
         out({"job_id": pid, "status": "Running"}, "status")
         logger.log("Starting Job #{}".format(pid))
-        proc = self.executor.submit(run_job, pid, command, out)
+        proc = self.executor.submit(run_job, pid, job, out)
+        job["executor"] = proc
 
         while proc.running():
             await tornado.gen.sleep(1)
+
         exit_code = proc.result()
 
-        self.jobs["running"].remove(pid)
+        self.jobs["running"].remove(job)
 
         if exit_code is 0:
             out({"job_id": pid, "status": "Completed"}, "status")
@@ -71,7 +76,7 @@ class ProcessManager:
             out({"job_id": pid, "status": "Failed"}, "status")
             out("Job #{} Failed".format(pid), "error")
             logger.log("Job #{} Failed".format(pid))
-            raise ProcessFailureException
+            raise ex.ProcessFailureException
 
     async def wait_for_queue(self, pid, out=logger.warn):
 
@@ -85,3 +90,15 @@ class ProcessManager:
                 await tornado.gen.sleep(
                     self.app.config.DEFAULT_QUEUE_CHECK_INTERVAL)
             return self.jobs["queued"].popleft()
+
+    def cancel_job(self, pid):
+        if pid in self.jobs["queued"]:
+            self.jobs["queued"].remove(pid)
+        else:
+            job = next((job for job in self.jobs["running"]
+                       if job["pid"] == pid), None)
+            if job:
+                logger.log(self.jobs["running"])
+                job["kill"] = True
+                logger.log(job["executor"].cancelled())
+                self.jobs["running"].remove(job)

@@ -4,7 +4,7 @@ from utils.handlers import RequestMapping, SocketController
 
 
 @RequestMapping("/simulate")
-class AsyncSocket(SocketController):
+class SimcSocket(SocketController):
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -15,6 +15,7 @@ class AsyncSocket(SocketController):
                 "result",
                 "status",
                 ]
+        self.jobs = []
         self.service = SimcService()
 
     def open(self):
@@ -24,4 +25,17 @@ class AsyncSocket(SocketController):
         logger.log("WebSocket closed")
 
     def simulate(self, request_json):
-        self.service.simc_armory_to_json(request_json, self.write_message)
+        pid = self.service.simc_armory_to_json(request_json,
+                                               self.write_message)
+        self.jobs.append(pid)
+        logger.log(self.jobs)
+
+    def cancel(self, request_json):
+        logger.log(self.jobs)
+        job_id = request_json["job_id"]
+        if job_id not in self.jobs:
+            self.write_error("Job not found")
+        else:
+            del self.jobs[self.jobs.index(job_id)]
+        logger.log(self.jobs)
+        self.service.cancel_simulation(job_id)
