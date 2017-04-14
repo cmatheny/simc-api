@@ -1,5 +1,6 @@
 import tornado.ioloop
 
+import exceptions.exceptions as ex
 from services.application import Application
 from services.process_manager import ProcessManager
 from utils import file_manager, logger
@@ -30,18 +31,28 @@ class SimcService():
         command = self.get_simc_armory_to_json_command(
                 region, char_json['realm'], char_json['name'], pid)
 
+        logger.log("pre: ", pid)
         tornado.ioloop.IOLoop.current().spawn_callback(
                 self.run_simulation, pid, command, out)
+        logger.log("post: ", pid)
+        return pid
 
     async def run_simulation(self, pid, command, out=logger.warn):
 
-        await self.proc_man.run_job(command, pid, out)
+        try:
+            await self.proc_man.run_job(command, pid, out)
+        except ex.CancelledSimulationException:
+            logger.log("killed")
+            return
 
         results_file = "{}.json".format(pid)
         results_json = file_manager.load_json(results_file)
         out(results_json, "result")
 
         file_manager.remove_file(results_file)
+
+    def cancel_simulation(self, job_id):
+        self.proc_man.cancel_job(job_id)
 
     def get_queue(self):
         return self.proc_man.jobs
