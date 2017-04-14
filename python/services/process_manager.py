@@ -34,7 +34,6 @@ def run_job(pid, job, out=logger.warn):
 class ProcessManager:
 
     def __init__(self):
-        pass
         self.jobs = {
             'queued': collections.deque(),
             'running': [],
